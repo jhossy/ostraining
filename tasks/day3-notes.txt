@@ -1,0 +1,149 @@
+# Podman + MySql
+- podman logs [container_name]
+    - display logs for container
+- podman inspect [container_name]
+    - displays detailed info about container (ip, network)
+- podman exec -it [container_name] env
+- yum install mysql
+    - installs mysql command in Linux
+- mysql -h [IP-address:port] -u [username} (root/localhost)
+    - requires exposed port
+- podman exec -it [container_name] bash
+
+# Dockerhub
+- podman login docker.io
+    - username
+    - password
+- podman tag localhost/mynewimage docker.io/[username]/[image-name]
+- podman push docker.io/[username]/[iamge-name]
+
+# Openshift 4
+- min. 3 master machines
+- min. 2 worker machines
+- required to connect to cluster
+    - create user + passwords
+    - access from CLI: API url (e.g. https://api.mayank.redopen.xyz:6443)
+    - access from dashboard: console url (e.g. https://console-openshift-console.apps.mayank.redopen.xyz/)
+    - credentials: user4 // redhat
+- install oc (Openshift CLI) command tool from https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-4.9/
+    - e.g wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-4.9/openshift-client-linux-4.9.7.tar.gz
+        - yum install wget
+    - extract file /usr/bin/tar xzvf openshift-client-linux-4.9.7.tar.gz (or navigate to /usr/bin)
+- available commands
+    - oc completion bash > /etc/bash_completion.d/oc
+
+## Login
+- oc login -u [username] -p [password] https://api.mayank.redopen.xyz:6443
+
+## Deployment
+- 3 ways
+    - CLI mode
+    - YAML
+    - JSON
+- project
+    - defines a limited area
+    - oc project [project_name]
+        - switch to [project_name]
+    - oc get projects
+        - returns all available projects
+    - oc get pods
+        - return all pods
+- create pods
+    - oc run [pod_name] --image=[image_name] (e.g. quay.io/mayank123modi/myserver)
+    - oc get pods
+        - oc get pods -o wide
+            - returns detailed information about running pods
+        - oc describe pods/[pod_name]
+            - returns detailed information about running pods
+- oc explain [resource-type], e.g. oc explain pod
+    - explains a resource type
+- oc create deployment [name] --image=[image-name], e.g. oc create deployment mayank --image=quay.io/mayank123modi/myserver
+
+## OC YAML
+- oc api-resources | grep -i pod
+- mandatory oc lines: kind, apiVersion, metadata, spec
+- pod example
+
+kind: Pod
+apiVersion: v1
+metadata: 
+ name: mypod2
+spec: 
+ containers: 
+ - name: mycont1
+   image: quay.io/mayank123modi/myserver
+
+- oc new-project [project_name]
+    - creates new project in Openshift
+- oc create -f pod1.yaml
+- all OC projects have 3 service accounts, which are automatically attached to the pod
+    - default
+    - builder
+    - deployer
+- oc get sa, get service accounts
+- SCC = Security Context Constraints
+    - list all SCCs,
+        - oc get scc
+- add admin policy to anyuid
+    - oc adm policy add-scc-to-user anyuid -z default
+- check which user is running pod
+    - oc describe pod (pod_name) | grep -i scc
+
+- create pod yaml using dry-run
+    - oc run --image=quay.io/mayank123modi/myapache mynewprod --dry-run -o yaml
+
+- create deployment
+    - oc create deployment mayank --image=quay.io/mayank123modi/myapache --dry-run -o yaml > dep.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: testdeployment
+  name: testdeployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testdeployment
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: testdeployment
+    spec:
+      containers:
+      - image: quay.io/mayank123modi/myapache
+        name: myapache
+        resources: {}
+status: {}
+
+- replicas: 1 - number of pods to create
+- selector: Via a label selector, the client/user can identify a set of objects. 
+    The label selector is the core grouping primitive in Kubernetes. (https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
+
+- to access your application you need
+    - service
+        - cluster ip - access to all nodes in cluster
+        - nodeport - expose specific node port
+        - load balancer
+        - external name
+    - route
+
+## OC service
+apiVersion: v1
+kind: Service
+metadata:
+  name: example
+  namespace: user4
+spec:
+  selector:
+    app: testdeployment
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+
+route: [anything].apps.mayank.redopen.xyz

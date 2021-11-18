@@ -1,0 +1,26 @@
+- 54.165.153.77
+- user4 // Redhat
+
+VIM:
+- i
+- esc -> :wq
+
+- uname -r
+- podman info
+- podman search centos
+- podman ps -a
+- podman run -it centos
+- ctrl + pq (exit container without stopping)
+- podman attach [container_name]
+- exit (exit + close container)
+- podman exec -it [container_name] bash
+
+- install Apache
+    - configure/create index file
+    - start the service
+        - systemctl start httpd
+        - httpd -DBACKGROUND
+
+- podman export [container_name] -o qwerty.tar
+- podman import qwerty.tar [name]
+- podman save [image] -o [name]

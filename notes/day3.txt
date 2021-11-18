@@ -1,0 +1,99 @@
+# create a dockerfile with the name of user. Inside it, use centos image to configure apache server
+# and by using RUN and COPY instruction, you have to create 3 html files and copy in /var/www/html/
+# create a new image using this dockerfile, but the code of html should be very interesting
+
+FROM docker.io/library/centos
+RUN yum install httpd -y
+RUN echo "this is index file. <a href='/cat.html'>Cat</a> or <a href='/notindex.html'>Not index</a>" > /var/www/html/index.html
+RUN echo "this is NOT index file" > /var/www/html/notindex.html
+COPY cat.html /var/www/html/cat.html
+CMD httpd -DFOREGROUND
+
+podman build -t jesperimage -f jesperfile .
+podman run -p 3204:80 localhost/jesperimage
+
+http://54.165.153.77:3204/index.html
+http://54.165.153.77:3204/notindex.html
+http://54.165.153.77:3204/cat.html
+
+# Q.1 Create a dockerfile using centos image and configure apache into it and there should be 3 files: index.html, training.html and trainer.html  
+# After upload this new image into docker hub 
+FROM docker.io/library/centos
+RUN yum install httpd -y
+RUN echo "this is index file. <a href='/training.html'>training</a> or <a href='/trainer.html'>trainer</a>" > /var/www/html/index.html
+RUN echo "this is trainer file" > /var/www/html/trainer.html
+RUN echo "this is training file" > /var/www/html/training.html
+CMD httpd -DFOREGROUND
+
+podman build -t apache-test .
+podman tag localhost/apache-test docker.io/jehos/apache-test
+podman push docker.io/jehos/apache-test
+
+# Q.2 Create A dockerfile using nginx image  ( Nginx server is already present no need to install anything ) and change the content  
+#from base content to something else. And then create image.
+FROM docker.io/library/nginx
+RUN echo "this is index file. <a href='/training.html'>training</a> or <a href='/trainer.html'>trainer</a>" > /usr/share/nginx/html/index.html
+RUN echo "this is trainer file" > /usr/share/nginx/html/trainer.html
+RUN echo "this is training file" > /usr/share/nginx/html/training.html
+CMD ["nginx-debug", "-g", "daemon off;"]
+
+podman build -t nginx-test .
+podman tag localhost/nginx-test docker.io/jehos/nginx-test
+podman push docker.io/jehos/nginx-test
+
+#Q.3  Do the same as second question with docker.io/library/httpd image
+FROM docker.io/library/httpd
+RUN echo "this is my custom index file" > /usr/local/apache2/htdocs/index.html
+CMD httpd -DFOREGROUND
+
+podman build -t httpd-test .
+podman tag localhost/httpd-test docker.io/jehos/httpd-test
+podman push docker.io/jehos/httpd-test
+
+# Q.1 Create a pod using yaml that you need to create in dashboard using quay.io/mayank123modi/myapache
+kind: Pod
+apiVersion: v1
+metadata: 
+ name: myapachepod
+spec: 
+ containers: 
+ - name: myapache
+   image: 'quay.io/mayank123modi/myapache'
+
+kind: Pod
+apiVersion: v1
+metadata: 
+ name: myserverpod
+spec: 
+ containers: 
+ - name: myservercont
+   image: 'quay.io/mayank123modi/myserver'
+   
+# Create deployment
+oc create deployment testdeployment --image=quay.io/mayank123modi/myapache --dry-run -o yaml > dep.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: testdeployment
+  name: testdeployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: testdeployment
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: testdeployment
+    spec:
+      containers:
+      - image: quay.io/mayank123modi/myapache
+        name: myapache
+        resources: {}
+status: {}
+

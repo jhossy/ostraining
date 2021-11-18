@@ -1,0 +1,46 @@
+# Q.1    try to pull 5 images
+#      docker.io/library/nginx
+# docker.io/library/httpd
+# docker.io/library/centos
+# docker.io/mdhack/myserver
+# docker.io/mdhack/myapache
+
+
+# Q.2  create container using      docker.io/library/centos
+
+# And that should be running everytime 
+
+# Q.3  and try to find out a way to give a name of your choice to give to container. 
+
+
+# Q.1   create a container using   docker.io/library/centos and configure apache into it.  And expose it on port no.  2801
+podman run -it --name webapp -p 2804:80 docker.io/library/centos
+podman attach webapp
+yum  install  httpd -y
+cd /var/www/html/
+vi index.html
+httpd -DBACKGROUND
+
+# Q.2   create a container using  docker.io/library/nginx  and try to expose on   2901 port no. (Note   :  use -itd  option )
+podman run -itd --name webapp1 -p 2904:80 docker.io/library/nginx
+
+# Q.3   create a container using  docker.io/library/httpd  and try to expose on   3101 port no. (Note   :  use -itd  option )
+podman run -itd --name webapp2 -p 3104:80 docker.io/library/httpd
+
+# Q.4  create a container using  docker.io/mdhack/myserver  and try to expose on   3201 port no. (Note   :  use -itd  option )
+podman run -itd --name webapp3 -p 3204:80 docker.io/mdhack/myserver
+
+# Q.5  create a container using  docker.io/mdhack/myapache   and try to expose on   3301 port no. (Note   :  use -itd  option )
+podman run -itd --name webapp3 -p 3304:80 docker.io/mdhack/myapache
+
+# Q.6  create a  container using centos image and create some folders into it and using the same container
+# create a new image and then try to verify whether that folder or files that u have created in previous container are there or not. 
+podman run -itd docker.io/library/centos
+mkdir jesper
+podman export gallant_ramanujan -o qwerty.tar
+podman import qwerty.tar qertyimage
+podman run -it qertyimage bash
+
+# Q.7   using docker.io/library/ubuntu image create a tar file.
+podman pull docker.io/library/ubuntu
+podman save docker.io/library/ubuntu -o ubuntu-local.tar

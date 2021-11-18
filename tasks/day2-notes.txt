@@ -1,0 +1,100 @@
+- trainer notes: https://tinyurl.com/spopen6
+- exercises: 54.165.153.77
+- trainer: 13.56.207.204
+
+- create docker file
+    - download centos
+    - create container
+    - install
+    - indexfile
+    - start the service
+
+    FROM docker.io/library/centos
+    RUN yum install httpd -y
+    RUN echo "hello from dockerfile" > /var/www/html/index.html
+    -- COPY jesper.html /var/www/html/
+    CMD httpd -DFOREGROUND
+
+- build image
+    - podman build -t testimage .
+
+- COPY -> copy files or folders
+- ADD -> URL or file location
+- ENTRYPOINT = locked entrypoint, non-overridable
+- CMD = somewhat like entrypoint, but overridable
+
+EXEC = execute command into the container
+    - podman exec -it [container-name] bash
+ATTACH = attach to container
+
+###################################################################
+Volumes
+- create directory
+- create volume
+- /var/lib/docker = default storage location for docker
+- /var/lib/containers/storage = default storage location for podman
+    - /var/lib/containers/storage/overlay-images
+- delete all containers = podman rm -f $(podman ps -aq)
+- delete all images = podman rm -f $(podman images -q)
+
+- mount volume locally to container
+    - podman run -itd -p 2668:80 -v /code:/usr/share/nginx/html/ docker.io/library/nginx
+    - podman run -itd -p 2669:80 -v webapp:/usr/share/nginx/html/ docker.io/library/nginx //webapp == name of existing volume
+- create/list volumes
+    - podman volume create webapp
+    - podman volume ls
+- podman stats = shows stats for host
+
+###################################################################
+Orchestration
+- DockerSwarm (2015?)
+- Apache Mesos
+- Kubernetes (2016 - Google)
+    - donated to CNCF - Cloud Native Computing Foundation
+    - certifications
+        - cka = certified kubernetes administrator
+        - ckap = certified kubernetes administrator professional
+        - cks = certified kubernetes specialist
+    - cannot create containers directly - uses docker/podman to create
+    - can orchestrate containers
+- Openshift
+
+- master / minion architecture
+    - master - min 4 gb ram
+    - minion - min 4 gb ram
+
+- pod
+    - a component of kubernetes
+    - its virtual
+    - includes one or more containers - https://www.vmware.com/topics/glossary/content/kubernetes-pods
+
+- request flow:
+    - crete pod request -> Kube API server -> etcd server -> KubeScheduler
+    - Kube API server = verifies request object
+    - etcd server = verifies if pods/entities exists
+    - KubeScheduler = checks ram/storage/cpu on worker machines, from the Kubelet running on the worker machines and decides where pod should go 
+        - https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/
+
+- communication between pods
+    - service mesh
+
+- replicaset
+    - will automatically create new pod
+    - "oc create deployment" will create replicaset
+    - if replicaset goes down, deployment will re-create it
+- replication controller
+
+- kubeproxy - https://kubernetes.io/docs/reference/command-line-tools-reference/kube-proxy/
+    - runs on each node
+
+###################################################################
+Openshift
+- created by Redhat
+- deployed on top of kubernetes
+- CoreOS or RHEL8 for OS on workers
+- extra features on top of Kubernetes
+    - DevOps tools and user experience
+    - containerized services
+    - runtimes and xPaaS
+    - STI = Source to image - https://github.com/openshift/source-to-image
+        - Openshift can build image based on source code

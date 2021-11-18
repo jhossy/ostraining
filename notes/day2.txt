@@ -1,0 +1,69 @@
+#Q.1 create a dockerfile using centos image and configure apache into it and there should be 3 files     
+#index.html   training.html  and trainer.html  
+
+FROM docker.io/library/centos
+RUN yum install httpd -y
+RUN echo "this is index" > /var/www/html/index.html
+RUN echo "this is training" > /var/www/html/training.html
+RUN echo "this is trainer" > /var/www/html/trainer.html
+CMD httpd -DFOREGROUND
+
+podman build -t centos-custom .
+podman run -itd -p 3004:80 localhost/centos-custom
+
+http://54.165.153.77:3004/index.html
+http://54.165.153.77:3004/trainer.html
+http://54.165.153.77:3004/training.html
+
+#Q.2 create a dockerfile using nginx image (Nginx server is already present no need to install anything )  
+# and change the content from base content to something else.
+# And then create image and run it and verify whether it is running successfully or not and expose on any port no. 
+
+FROM docker.io/library/nginx
+RUN echo "this is my custom index file" > /usr/share/nginx/html/index.html
+CMD ["nginx-debug", "-g", "daemon off;"]
+
+podman build -t custom-nginx:v1 .
+podman run -itd -p 4204:80 localhost/custom-nginx:v1
+
+http://54.165.153.77:4204/
+
+#Q.3 do same as in q. 2  with docker.io/library/httpd image  
+FROM docker.io/library/httpd
+RUN echo "this is my custom index file" > /usr/local/apache2/htdocs/index.html
+CMD httpd -DFOREGROUND
+
+podman build -t custom-httpd:v1 .
+podman run -itd -p 4304:80 localhost/custom-httpd:v1
+
+http://54.165.153.77:4304/
+
+# with entrypoint
+FROM docker.io/library/httpd
+RUN echo "another custom index file" > /usr/local/apache2/htdocs/index.html
+ENTRYPOINT ["httpd"]
+CMD -DFOREGROUND
+
+podman build -t custom-httpd:v2 .
+podman run -itd -p 4404:80 localhost/custom-httpd:v2
+
+
+http://54.165.153.77:4404/
+
+################################################################################
+# Q.1 Create a dir and put somefiles into it and then mount it using volume option to docker.io/library/nginx  and expose it on any port no.
+mkdir podmanvolume
+cd podmanvolume
+echo "test" > trainer.html
+podman run -itd -p 4504:80 -v /home/user4/podmanvolume:/usr/share/nginx/html/ docker.io/library/nginx
+http://54.165.153.77:4504/trainer.html
+
+# Q.2 Create a volume and put there some files and use this volume and mount in a container    docker.io/library/httpd  
+mkdir podmanvolume2
+cd podmanvolume
+echo "test" > trainer.html
+podman run -itd -p 4604:80 -v /home/user4/podmanvolume2:/usr/local/apache2/htdocs/ docker.io/library/httpd
+
+http://54.165.153.77:4604/trainer.html
+
+
