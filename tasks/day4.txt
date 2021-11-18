@@ -1,0 +1,299 @@
+# 1. create dockerfile
+FROM docker.io/library/nginx
+RUN echo "<h1>this is index file.</h1> <a href='/training.html'>training</a> or <a href='/trainer.html'>trainer</a>" > /usr/share/nginx/html/index.html
+RUN echo "this is trainer file" > /usr/share/nginx/html/trainer.html
+RUN echo "this is training file" > /usr/share/nginx/html/training.html
+CMD ["nginx-debug", "-g", "daemon off;"]
+
+podman build -t os4-nginx .
+
+# 2. push image to dockerhub
+podman login docker.io
+podman tag localhost/os4-nginx docker.io/jehos/os4-nginx
+podman push docker.io/jehos/os4-nginx
+
+# 3. using this image, deployment via API
+oc create deployment os4-nginx --image=docker.io/jehos/os4-nginx --dry-run -o yaml > dep.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: os4-nginx
+  name: os4-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: os4-nginx
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: os4-nginx
+    spec:
+      containers:
+      - image: docker.io/jehos/os4-nginx
+        name: os4-nginx
+        resources: {}
+status: {}
+
+oc create deployment os4-nginx --image=docker.io/jehos/os4-nginx
+
+# 4. expose on URL + route
+service yaml:
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: os4-nginx
+  namespace: user4
+  uid: 752cb550-b397-4595-9a64-ea0e53707810
+  resourceVersion: '4919403'
+  creationTimestamp: '2021-11-18T06:31:47Z'
+  managedFields:
+    - manager: Mozilla
+      operation: Update
+      apiVersion: v1
+      time: '2021-11-18T06:31:47Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          'f:internalTrafficPolicy': {}
+          'f:ports':
+            .: {}
+            'k:{"port":80,"protocol":"TCP"}':
+              .: {}
+              'f:port': {}
+              'f:protocol': {}
+              'f:targetPort': {}
+          'f:selector': {}
+          'f:sessionAffinity': {}
+          'f:type': {}
+spec:
+  clusterIP: 172.30.43.246
+  ipFamilies:
+    - IPv4
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  internalTrafficPolicy: Cluster
+  clusterIPs:
+    - 172.30.43.246
+  type: ClusterIP
+  ipFamilyPolicy: SingleStack
+  sessionAffinity: None
+  selector:
+    app: os4-nginx
+status:
+  loadBalancer: {}
+
+######################################################
+Route yaml
+
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: os4-nginx
+  namespace: user4
+  uid: 7a2e5e80-0f13-4776-bb0a-df1898ab6051
+  resourceVersion: '4919704'
+  creationTimestamp: '2021-11-18T06:32:43Z'
+  managedFields:
+    - manager: Mozilla
+      operation: Update
+      apiVersion: route.openshift.io/v1
+      time: '2021-11-18T06:32:43Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:spec':
+          'f:host': {}
+          'f:port':
+            .: {}
+            'f:targetPort': {}
+          'f:to':
+            'f:kind': {}
+            'f:name': {}
+            'f:weight': {}
+          'f:wildcardPolicy': {}
+    - manager: openshift-router
+      operation: Update
+      apiVersion: route.openshift.io/v1
+      time: '2021-11-18T06:32:43Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:status':
+          'f:ingress': {}
+spec:
+  host: os4-nginx.apps.mayank.redopen.xyz
+  to:
+    kind: Service
+    name: os4-nginx
+    weight: 100
+  port:
+    targetPort: 80
+  wildcardPolicy: None
+status:
+  ingress:
+    - host: os4-nginx.apps.mayank.redopen.xyz
+      routerName: default
+      conditions:
+        - type: Admitted
+          status: 'True'
+          lastTransitionTime: '2021-11-18T06:32:43Z'
+      wildcardPolicy: None
+      routerCanonicalHostname: router-default.apps.mayank.redopen.xyz
+
+# Q.1 Create dc using Dashboard using above url and then change the code 
+# and build it manually and one more thing is try to use webhook also 
+- https://github.com/mdhack0316/nodejs-openshift
+- https://github.com/mdhack0316/openshiftphp
+- https://github.com/mdhack0316/nodejs-openshift
+
+manually fork repository to my GitHub account
+
+oc new-app --as-deployment-config https://github.com/jhossy/nodejs-openshift
+
+in openshift GUI, create route to app
+
+in github account:
+    - settings -> webhooks --> add webhook url from Openshift 4 (build config section)
+        - paylod url
+        - content type: application/json
+        - SSL verification: disable
+
+###############################
+
+buildconfig:
+kind: BuildConfig
+apiVersion: build.openshift.io/v1
+metadata:
+  annotations:
+    openshift.io/generated-by: OpenShiftNewApp
+  resourceVersion: '4990757'
+  name: nodejs-openshift
+  uid: cd6779ea-e443-49ca-afe1-67c65402d949
+  creationTimestamp: '2021-11-18T09:58:54Z'
+  generation: 5
+  managedFields:
+    - manager: oc
+      operation: Update
+      apiVersion: build.openshift.io/v1
+      time: '2021-11-18T09:58:54Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:annotations':
+            .: {}
+            'f:openshift.io/generated-by': {}
+          'f:labels':
+            .: {}
+            'f:app': {}
+            'f:app.kubernetes.io/component': {}
+            'f:app.kubernetes.io/instance': {}
+        'f:spec':
+          'f:output':
+            'f:to':
+              .: {}
+              'f:kind': {}
+              'f:name': {}
+          'f:runPolicy': {}
+          'f:source':
+            'f:git':
+              .: {}
+              'f:uri': {}
+            'f:type': {}
+          'f:strategy':
+            'f:sourceStrategy':
+              .: {}
+              'f:from':
+                .: {}
+                'f:kind': {}
+                'f:name': {}
+                'f:namespace': {}
+            'f:type': {}
+          'f:triggers': {}
+    - manager: openshift-apiserver
+      operation: Update
+      apiVersion: build.openshift.io/v1
+      time: '2021-11-18T09:58:54Z'
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:status':
+          'f:imageChangeTriggers': {}
+          'f:lastVersion': {}
+  namespace: user4
+  labels:
+    app: nodejs-openshift
+    app.kubernetes.io/component: nodejs-openshift
+    app.kubernetes.io/instance: nodejs-openshift
+spec:
+  nodeSelector: null
+  output:
+    to:
+      kind: ImageStreamTag
+      name: 'nodejs-openshift:latest'
+  resources: {}
+  successfulBuildsHistoryLimit: 5
+  failedBuildsHistoryLimit: 5
+  strategy:
+    type: Source
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        namespace: openshift
+        name: 'nodejs:14-ubi8'
+  postCommit: {}
+  source:
+    type: Git
+    git:
+      uri: 'https://github.com/jhossy/nodejs-openshift'
+  triggers:
+    - type: GitHub
+      github:
+        secret: yB8wS38X87IGTFPIz5OB
+    - type: Generic
+      generic:
+        secret: zybM8ZvrzxP84cB9-s4l
+    - type: ConfigChange
+    - type: ImageChange
+      imageChange: {}
+  runPolicy: Serial
+status:
+  lastVersion: 4
+  imageChangeTriggers:
+    - lastTriggeredImageID: >-
+        image-registry.openshift-image-registry.svc:5000/openshift/nodejs@sha256:c9625f9f2b2e507036b6d2f0bfa22e3c44a4915844d7ba745169358aee0397cd
+      from:
+        namespace: openshift
+        name: 'nodejs:14-ubi8'
+      lastTriggerTime: null
+
+# Q.1 Create a deployment using dashboard and replica no. should be 20  using quay.io/mayank123modi/myserver image and 
+# expose that as well . and after that try to chnage the image name to quay.io/mayank123modi/myapache and verify whether
+# it is creating  new pod or not 
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  name: example
+  namespace: user4
+spec:
+  selector:
+    app: httpd
+  replicas: 10
+  template:
+    metadata:
+      labels:
+        app: httpd
+    spec:
+      containers:
+        - name: httpd
+          image: quay.io/mayank123modi/myserver
+
+
+
+
+

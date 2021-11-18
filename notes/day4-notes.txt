@@ -1,0 +1,158 @@
+## DAY 4
+- deploymentconfig
+    - builds
+    - webhook
+- strategy
+    - rollingupdate
+    - recreate
+- import images
+    - public registry
+    - private registry
+- security / configmap
+- jenkins build pipeline
+
+- deployment vs deploymentconfig
+    - 99% similar
+        - triggers work (differently) in deploymentconfig
+    - if using source-to-image, use deploymentconfig
+    - if using yaml, use deployment
+    - deploymentconfig
+        - replicationcontroller
+            - match by key-value pair
+    - deployment
+        - replicationset
+            - match by set-based selector (expression :OR, AND)
+- Source to image (S2I)
+    - 1: buildconfig - build pod (builder service account)
+        - git command clone
+        - verify code (php, .net, etc)
+        - image repository -> pull base image
+            - base image + cloned
+        - build new image
+        - push new image
+    - 2: deployment pod (deployer service account)
+    - 3: main pod running (default service account)
+
+- oc new-app --help
+    - oc new-app --as-deployment-config [github-url]
+        - oc new-app --as-deployment-config https://github.com/mdhack0316/openshiftphp    
+    - oc get bc
+        - (bc = buildconfig)
+    - oc logs -f [build_config_name]
+        - oc logs -f bc/openshiftphp
+    - oc get build
+    - oc get pods
+
+- trigger new build manually
+    - oc start build
+    - oc rollback [name_of_buildconfig]
+    - oc new-app --as-deployment-config https://github.com/jhossy/nodejs-openshift
+
+## OC strategy
+- RollingUpdate
+    - Create new pod. Once new pod is fully initialized and responding, the old pod will be deleted
+    - almost no downtime
+- Re-Create
+    - Delete old pods first. Then create new pod.
+    - will cause downtime
+    - good for migration, storage issues, etc.
+
+- oc explain deployment.spec.strategy
+    - display possible values for strategy
+
+## ConfigMap / secrets
+- key-value pair, can be used from .yaml
+- configmap
+    - not secure
+- secrets
+    - secure values, stored in encoded form
+
+## pod using environment vars
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example
+  labels:
+    app: httpd
+  namespace: user4
+spec:
+  containers:
+    - name: httpd
+      image: quay.io/mayank/mysql
+      env: 
+      - name: MYSQL_ROOT_PASSWORD
+        value: redhat
+      - name: MYSQL_USER
+        value: mayank
+      - name: MYSQL_PASSWORD
+        value: test@1234
+      - name: MYSQL_DATABASE
+        value: povilas
+
+## config map
+
+create configmap
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: myconfigmap
+  namespace: user4
+data:
+  MYSQL_ROOT_PASSWORD:  redhat
+  MYSQL_USERe: mayank
+  MYSQL_PASSWORD: test@1234
+  MYSQL_DATABASE: povilas
+
+
+### USE configmap ###
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example
+  labels:
+    app: httpd
+  namespace: user4
+spec:
+  containers:
+    - name: httpd
+      image: 'image-registry.openshift-image-registry.svc:5000/openshift/httpd:latest'
+      envFrom:
+      - configMapRef:
+        name: myconfigmap
+
+## secrets
+- apiVersion: v1
+kind: Pod
+metadata:
+  name: example
+  labels:
+    app: httpd
+  namespace: user4
+spec:
+  containers:
+    - name: httpd
+      image: 'image-registry.openshift-image-registry.svc:5000/openshift/httpd:latest'
+      envFrom:
+      - configMapRef:
+        name: myconfigmap
+
+- decode base64 value
+    - echo [base64-value] | base64 -d
+
+## Openshift templates
+- template
+    - a fully fledged yaml file containing everything (app + db) required to deploy entire app
+
+- create new app based on template
+    - oc new-app --file [file_name.yaml]
+    - oc new-app --file [file_name.yaml] --param MEMORY_LIMIT=2Gi
+        - change memory limit to 2 GB
+    - oc new-app --file [file_name.yaml] --param MEMORY_LIMIT=2Gi --raw -o yaml
+        - prints yaml
+
+## Openshift certifications
+- ex180
+- ex270
+- ex288
+- ex425
