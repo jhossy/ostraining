@@ -1,0 +1,72 @@
+# Create resource quota in that pod limit should be 3 and service limit 2 
+# and then try to   create deployment and verify both these things 
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: example
+  namespace: user4
+spec:
+  hard:
+    pods: '3'
+    services: '2'
+    requests.cpu: '1'
+    requests.memory: 1Gi
+    limits.cpu: '2'
+    limits.memory: 2Gi
+
+# Create a deployment and try to manually scale in and out AFther 
+# that try to create A HPA and then try to verify whther u vcan go more then  
+# limits that u have given 
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: example
+  namespace: user4
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: example
+  minReplicas: 3
+  maxReplicas: 7
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          averageUtilization: 50
+          type: Utilization
+
+- oc scale deployment mayank --replicas=10
+- oc scale deployment mayank --replicas=1
+
+# Create Persistent Volume Claim (PVC). Create pod that use PVC. 
+# Verify Persistent Volume (PV) has been created
+apiVersion: v1
+kind: Pod
+metadata:
+  name: storage-pod
+  labels: 
+   app: storage-pod
+spec:
+  volumes:
+  - name: user4-storage
+    persistentVolumeClaim:    
+      claimName: user4-claim
+  containers:
+  - name: 1st
+    image: nginx
+    volumeMounts:
+    - name: user4-storage
+      mountPath: /usr/share/nginx/html
+  - name: 2nd
+    image: debian
+    volumeMounts:
+    - name: user4-storage
+      mountPath: /html
+    command: ["/bin/sh", "-c"]
+    args:
+      - while true; do
+          date >> /html/index.html;
+          sleep 1;
+        done

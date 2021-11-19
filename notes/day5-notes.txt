@@ -1,0 +1,143 @@
+- ResourceQuota
+- LimitRange
+- Persistent Storage
+
+## ResourceQuota
+- matched by namespace ('project-name')
+- oc create deployment [deployment_name] [image_URL]
+    - oc create deployment mayank --image=quay.io/mayank123modi/myserver
+- in UI, Addministration -> ResourceQuotas
+- in console
+    - oc create quota [name_of_quota]
+- oc scale deployment [name_of_deployment] --replicas=10
+
+## Automatic scaling
+- setup using UI: workloads -> HorizontalPodAutoscalers
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: example
+  namespace: user4
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: example
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          averageUtilization: 50
+          type: Utilization
+
+
+- to fully utilize automatic scaling, set resource-limits in deployment config
+    resources:
+    - requests:
+        cpu: 500m
+        memory: 1Gi
+
+## LimitRange
+- quota -> specified on project level
+    - 1 pod can max use 1Gi, etc.
+    - 1 container can max use...
+- oc get limitranges
+    - oc describe limitranges
+
+- https://docs.openshift.com/container-platform/3.6/admin_guide/limits.html
+- https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+
+- specify limit range
+apiVersion: "v1"
+kind: "LimitRange"
+metadata:
+  name: "core-resource-limits" 
+spec:
+  limits:
+    - type: "Pod"
+      max:
+        cpu: "2" 
+        memory: "1Gi" 
+      min:
+        cpu: "200m" 
+        memory: "6Mi" 
+    - type: "Container"
+      max:
+        cpu: "2" 
+        memory: "1Gi" 
+      min:
+        cpu: "100m" 
+        memory: "4Mi" 
+
+###########################################
+- create resource with resource limits
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend
+spec:
+  containers:
+  - name: app
+    image: images.my-company.example/app:v4
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "250m"
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+
+###########################################
+Persistent Storage
+- persistent volume
+    - integrates with multiple cloud providers storage features (AWS, Azure, NFTS(?))
+- persistent volume -> persistent volume claim --> mount to pod
+    - 3 types of access modes
+        - ReadWriteOnce
+            - The volume can be mounted as read-write by a single node.
+        - ReadOnlyMany
+            - The volume can be mounted as read-only by many nodes.
+        - ReadWriteMany
+            - The volume can be mounted as read-write by many nodes.
+    - https://docs.openshift.com/container-platform/4.1/storage/understanding-persistent-storage.html#pv-access-modes_understanding-persistent-storage
+    - https://kubernetes.io/docs/concepts/storage/persistent-volumes/
+
+- referencing a Persistent Volume Claim (PVC) will automatically create a Persistent Volume (PV)
+
+- volumes:
+  persistentVolumeClaim:
+   name: mayank
+   claimName: myclaim
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mc1
+  labels: 
+   app: testpod
+spec:
+  volumes:
+  - name: storage-test
+    persistentVolumeClaim:    
+      claimName: myclaim
+  containers:
+  - name: 1st
+    image: nginx
+    volumeMounts:
+    - name: storage-test
+      mountPath: /usr/share/nginx/html
+  - name: 2nd
+    image: debian
+    volumeMounts:
+    - name: storage-test
+      mountPath: /html
+    command: ["/bin/sh", "-c"]
+    args:
+      - while true; do
+          date >> /html/index.html;
+          sleep 1;
+        done
